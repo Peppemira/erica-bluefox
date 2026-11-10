@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=0">
+  <link rel="icon" href="common/favicon.ico" type="image/x-icon">
+  <title>Erica – BLUEFOX</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #a3a1a4; overflow: hidden; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    #canvas_video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+    #background_video { display: none; }
+    #canvas_gl { position: absolute; top: -9999px; left: -9999px; width: 184px; height: 184px; }
+    #canvasEl { position: absolute; left: -9999px; top: -9999px; width: 300px; height: 150px; }
+    #screen { position: absolute; width: 1px; height: 1px; bottom: -1000px; right: -1000px; }
+    #screen2 { position: absolute; inset: 0; width: 100%; height: 100%; border: none; z-index: 5; background: transparent; }
+    #loadingSpinner { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3; color: #0b2545; font-size: 18px; margin: 0; }
+    #startMessage { display: none; }
+  </style>
+</head>
+<body>
+  <figure id="loadingSpinner"><strong>Erica sta arrivando…</strong></figure>
+  <canvas id="canvasEl"></canvas>
+  <video id="background_video" muted playsinline></video>
+  <canvas id="canvas_video"></canvas>
+  <canvas id="canvas_gl" width="184" height="184"></canvas>
+  <div id="screen"></div>
+  <iframe id="screen2" src="dialog.html" allow="microphone; autoplay" style="display: none;"></iframe>
+  <div id="startMessage">Caricamento</div>
+  <script src="js/pako.min.js"></script>
+  <script src="js/DHLiveMini.js"></script>
+  <script src="js/MiniMateLoader.js"></script>
+  <script src="js/MiniLive2.js"></script>
+</body>
+</html>

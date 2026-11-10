@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
+  #brand { position: absolute; top: 14px; left: 0; right: 0; text-align: center; color: #0b2545; font-weight: 700; letter-spacing: 1px; font-size: 14px; text-shadow: 0 1px 2px rgba(255,255,255,.7); }
+  #bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 16px calc(22px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 12px;
+         background: linear-gradient(to top, rgba(11,37,69,.72), rgba(11,37,69,0)); }
+  #status { color: #fff; font-size: 16px; min-height: 22px; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.5); max-width: 560px; }
+  #mic { width: 78px; height: 78px; border-radius: 50%; border: 0; cursor: pointer; background: #fff; color: #0b2545; display: flex; align-items: center; justify-content: center;
+         box-shadow: 0 6px 20px rgba(0,0,0,.25); transition: transform .15s, background .2s; }
+  #mic:active { transform: scale(.95); }
+  #mic.listening { background: #e5484d; color: #fff; animation: pulse 1.3s infinite; }
+  #mic.speaking { background: #1f7ae0; color: #fff; }
+  #mic.thinking { background: #f5a524; color: #fff; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(229,72,77,.6); } 70% { box-shadow: 0 0 0 18px rgba(229,72,77,0); } 100% { box-shadow: 0 0 0 0 rgba(229,72,77,0); } }
+  #hint { color: rgba(255,255,255,.85); font-size: 12px; }
+  #prog { width: 220px; height: 5px; background: rgba(255,255,255,.35); border-radius: 3px; overflow: hidden; display: none; }
+  #prog i { display: block; height: 100%; width: 0; background: #fff; }
+</style>
+</head>
+<body>
+<div id="brand">ERICA · BLUEFOX</div>
+<div id="bar">
+  <div id="status">Tocca il microfono e parla con Erica</div>
+  <div id="prog"><i></i></div>
+  <button id="mic" aria-label="Parla con Erica">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+  </button>
+  <div id="hint">Dialogo a voce · tocca di nuovo per fermare</div>
+</div>
+
+<script type="module">
+/* ============ Conoscenza di Erica ============ */
+const SEGRETERIA = "Per questo è meglio sentire direttamente la segreteria BLUEFOX: chiama lo 0942 701333, oppure scrivi su WhatsApp al 348 4927204.";
+const SALUTO = "Ciao, sono Erica di BLUEFOX! Puoi chiedermi informazioni su patente, patente nautica e CQC, oppure dirmi: facciamo un quiz.";
+const FAQ = [
+  {k:["contatt","telefon","numero","whatsapp","email","dove siete","sede","indirizzo"], a:"BLUEFOX si trova in Via degli Astronauti 5, a Nizza di Sicilia. Puoi chiamare lo 0942 701333, oppure scrivere su WhatsApp al 348 4927204."},
+  {k:["esame di teoria","teoria","quante domande","errori","quiz ministeriale"], a:"L'esame di teoria della patente B si fa al computer in Motorizzazione: trenta domande vero o falso, venti minuti di tempo, e al massimo tre errori. Vuoi fare qualche domanda di prova?"},
+  {k:["foglio rosa"], a:"Il foglio rosa si ottiene dopo aver superato la teoria. Vale dodici mesi, e permette di sostenere l'esame pratico fino a tre volte."},
+  {k:["neopatentat","limiti di velocità","limite di velocità","quanto posso andare"], a:"Con il foglio rosa e da neopatentato non puoi superare novanta chilometri orari sulle extraurbane principali, e cento in autostrada."},
+  {k:["nautica","barca","12 miglia","dodici miglia","carteggio"], a:"Per la patente nautica a motore entro dodici miglia servono diciotto anni. La teoria ha un quiz base di venti domande, con almeno sedici risposte esatte, e un quiz di carteggio di cinque domande, con almeno quattro esatte. Poi c'è la prova pratica in barca."},
+  {k:["cqc","camion","autobus","qualificazione","carta di qualificazione"], a:"La CQC è l'abilitazione professionale per chi guida camion o autobus per lavoro. BLUEFOX organizza i corsi di conseguimento e di rinnovo. Per le date, chiedi in segreteria."},
+  {k:["rinnov","scadut","scadenza"], a:"Per il rinnovo della patente pensa a tutto BLUEFOX: visita medica, versamenti e invio della pratica. La nuova patente ti arriva per posta."},
+  {k:["medic","visita","commissione"], a:"BLUEFOX organizza la visita medica. Se serve la Commissione Medica Locale di Messina, ti seguiamo noi in tutta la pratica."},
+  {k:["precedenz","incroc","rotatori"], a:"Agli incroci senza segnali, devi dare la precedenza a chi arriva da destra. Con il segnale di stop invece devi sempre fermarti, e dare la precedenza a tutti i veicoli sulla strada che incroci."},
+  {k:["sorpass"], a:"Si sorpassa a sinistra, dopo aver controllato gli specchietti e segnalato con la freccia. È vietato sorpassare in curva, sui dossi, vicino agli incroci e sulle strisce pedonali."},
+  {k:["distanza di sicurezza"], a:"La distanza di sicurezza deve permetterti di fermarti senza tamponare chi ti precede. Va aumentata con la pioggia, la nebbia, e quando la velocità è più alta."},
+  {k:["cintur","seggiolin"], a:"Le cinture vanno allacciate da tutti gli occupanti, anche dietro. I bambini sotto un metro e cinquanta devono usare un seggiolino adatto alla loro statura."},
+  {k:["alcol","bere","birra","vino"], a:"Il limite generale del tasso alcolemico è zero virgola cinque grammi per litro. Per i neopatentati e per i conducenti professionali il limite è zero."},
+  {k:["moto","a2","scooter","ciclomotor"], a:"Se hai la patente A2 da almeno due anni, puoi passare alla A con un corso di formazione pratica in autoscuola, senza esame. Per le altre categorie moto chiedi in segreteria."},
+  {k:["tachigraf"], a:"BLUEFOX segue anche la domanda della carta tachigrafica del conducente. Per i documenti necessari chiedi in segreteria."},
+  {k:["prezz","cost","quanto viene","quanto si paga","orari","orario","quando apr","date","document","prenot","iscriv"], a:SEGRETERIA},
+  {k:["chi sei","come ti chiami","presentati"], a:"Sono Erica, l'insegnante virtuale di BLUEFOX. Ti aiuto a ripassare la teoria, ti faccio i quiz e ti do informazioni sui corsi."},
+  {k:["grazie"], a:"Figurati! Se vuoi continuare, chiedimi pure qualcosa o dimmi: facciamo un quiz."},
+  {k:["ciao","buongiorno","buonasera","salve"], a:SALUTO},
+];
+const QUIZ = [
+  ["Al segnale di stop bisogna sempre fermarsi e dare la precedenza.", true, "Lo stop obbliga a fermarsi anche se la strada sembra libera."],
+  ["Con il foglio rosa, in autostrada, si possono superare i cento chilometri orari.", false, "Con il foglio rosa il limite in autostrada è cento chilometri orari."],
+  ["Nei centri abitati il limite di velocità è generalmente di cinquanta chilometri orari.", true, "Salvo segnali diversi, in città il limite è cinquanta."],
+  ["Con l'asfalto bagnato la distanza di sicurezza deve aumentare.", true, "Sul bagnato lo spazio di frenata si allunga."],
+  ["Il segnale triangolare con il bordo rosso indica un pericolo.", true, "I segnali di pericolo sono triangolari con il bordo rosso."],
+  ["È consentito sorpassare in prossimità di un dosso.", false, "Vicino a un dosso la visibilità è ridotta, quindi il sorpasso è vietato."],
+  ["Le cinture di sicurezza vanno allacciate anche sui sedili posteriori.", true, "Sono obbligatorie per tutti gli occupanti."],
+  ["Il semaforo giallo fisso significa che bisogna accelerare per passare.", false, "Il giallo impone di fermarsi, a meno che non si sia troppo vicini per farlo in sicurezza."],
+  ["L'indicatore di direzione va usato anche per cambiare corsia.", true, "Ogni spostamento laterale va segnalato."],
+  ["Per i neopatentati il tasso alcolemico deve essere zero.", true, "Per i neopatentati vale il limite di zero."],
+  ["Il triangolo va posizionato ad almeno cinquanta metri dal veicolo fermo, fuori dai centri abitati.", true, "Deve essere visibile ad almeno cento metri da chi sopraggiunge."],
+  ["Si può sostare sulle strisce pedonali per pochi minuti.", false, "Sulle strisce pedonali la sosta e la fermata sono sempre vietate."],
+];
+let quiz = null, usate = [];
+function nuovaDomanda(){
+  if (usate.length >= QUIZ.length) usate = [];
+  let i; do { i = Math.floor(Math.random()*QUIZ.length); } while (usate.includes(i));
+  usate.push(i); quiz = QUIZ[i]; return quiz[0] + " Vero o falso?";
+}
+function rispondi(q){
+  const s = q.toLowerCase().trim();
+  if (/(basta|stop quiz|fine quiz|smetti|ferma il quiz)/.test(s) && quiz){ quiz = null; return "Va bene, il quiz è finito. Chiedimi pure quello che vuoi."; }
+  if (quiz){
+    const tok = s.split(/[\s,.!?;:]+/); const v = tok.some(w => ['vero','vera','si','sì','giusto','esatto','corretto'].includes(w)), f = tok.some(w => ['falso','falsa','no','sbagliato'].includes(w));
+    if (v || f){
+      const [, ok, why] = quiz;
+      const giusto = (v && ok) || (f && !ok);
+      return (giusto ? "Esatto! " : "Non proprio: la risposta giusta è " + (ok ? "vero" : "falso") + ". ") + why + " Prossima domanda. " + nuovaDomanda();
+    }
+    if (/ripeti|non ho capito/.test(s)) return quiz[0] + " Vero o falso?";
+  }
+  if (/quiz|domand|interrog|ripass|vero o falso|mettimi alla prova/.test(s)) return "Perfetto, facciamo un quiz! Rispondi vero o falso. " + nuovaDomanda();
+  for (const f of FAQ) if (f.k.some(k => s.includes(k))) return f.a;
+  return "Su questo non ho ancora informazioni precise. " + SEGRETERIA;
+}
+
+/* ============ Interfaccia ============ */
+const mic = document.getElementById('mic'), statusEl = document.getElementById('status'), prog = document.getElementById('prog');
+function stato(cls, txt){ mic.className = cls || ''; if (txt != null) statusEl.textContent = txt; }
+
+/* ============ Voce di Erica: Piper "Paola" (open source, nel browser) ============ */
+const VOCE = 'it_IT-paola-medium';
+let tts = null, ttsPronto = false;
+async function caricaVoce(){
+  try{
+    tts = await import('https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/+esm');
+    tts.PATH_MAP[VOCE] = 'it/it_IT/paola/medium/it_IT-paola-medium.onnx';
+    const gia = (await tts.stored()).includes(VOCE);
+    if (!gia){
+      prog.style.display = 'block';
+      stato('', "Erica sta preparando la voce (solo la prima volta)…");
+      await tts.download(VOCE, p => { if (p.total) prog.firstElementChild.style.width = Math.round(100*p.loaded/p.total) + '%'; });
+      prog.style.display = 'none';
+    }
+    ttsPronto = true;
+  }catch(e){ console.warn('Voce Piper non disponibile, uso la voce del dispositivo', e); ttsPronto = false; prog.style.display = 'none'; }
+}
+
+let actx = null;
+function contesto(){ if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); return actx; }
+
+function wav16k(buffer){
+  const ch = buffer.getChannelData(0), n = ch.length, dv = new DataView(new ArrayBuffer(44 + n*2));
+  const w = (o,s)=>{ for (let i=0;i<s.length;i++) dv.setUint8(o+i, s.charCodeAt(i)); };
+  w(0,'RIFF'); dv.setUint32(4, 36+n*2, true); w(8,'WAVE'); w(12,'fmt '); dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+  dv.setUint32(24,16000,true); dv.setUint32(28,32000,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true); w(36,'data'); dv.setUint32(40,n*2,true);
+  for (let i=0;i<n;i++){ const s = Math.max(-1, Math.min(1, ch[i])); dv.setInt16(44+i*2, s < 0 ? s*0x8000 : s*0x7FFF, true); }
+  return new Uint8Array(dv.buffer);
+}
+async function a16k(audioBuffer){
+  const off = new OfflineAudioContext(1, Math.ceil(audioBuffer.duration*16000), 16000);
+  const src = off.createBufferSource(); src.buffer = audioBuffer; src.connect(off.destination); src.start();
+  return await off.startRendering();
+}
+function labbra(bytes){
+  const M = parent.Module; if (!M || !M._setAudioBuffer) return;
+  const p = M._malloc(bytes.byteLength); M.HEAPU8.set(bytes, p); M._setAudioBuffer(p, bytes.byteLength); M._free(p);
+}
+function frasi(t){ return (t.match(/[^.!?]+[.!?]*/g) || [t]).map(x => x.trim()).filter(Boolean); }
+
+async function parlaFrase(testo){
+  const ctx = contesto();
+  if (ttsPronto){
+    const wav = await tts.predict({ text: testo, voiceId: VOCE });
+    const buf = await ctx.decodeAudioData(await wav.arrayBuffer());
+    const b16 = await a16k(buf);
+    labbra(wav16k(b16));
+    await new Promise(res => { const s = ctx.createBufferSource(); s.buffer = buf; s.connect(ctx.destination); s.onended = res; s.start(); });
+  } else {
+    // Riserva: voce del dispositivo + labbra guidate da un segnale sintetico a ritmo di sillabe
+    const dur = Math.max(0.6, testo.length * 0.065), sr = 16000, b = ctx.createBuffer(1, Math.ceil(dur*sr), sr), d = b.getChannelData(0);
+    for (let i=0;i<d.length;i++){ const t=i/sr; d[i] = (Math.random()*2-1) * 0.35 * Math.max(0, Math.sin(t*2*Math.PI*3.5)); }
+    labbra(wav16k(b));
+    await new Promise(res => { const u = new SpeechSynthesisUtterance(testo); u.lang = 'it-IT'; const v = speechSynthesis.getVoices().find(v => v.lang.startsWith('it')); if (v) u.voice = v; u.onend = res; u.onerror = res; speechSynthesis.speak(u); });
+  }
+}
+async function parla(testo){
+  stato('speaking', testo);
+  for (const f of frasi(testo)) { if (!attivo) break; await parlaFrase(f); }
+}
+
+/* ============ Orecchie: riconoscimento vocale del browser ============ */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, attivo = false;
+function ascolta(){
+  return new Promise(res => {
+    if (!SR){ res(null); return; }
+    rec = new SR(); rec.lang = 'it-IT'; rec.interimResults = true; rec.maxAlternatives = 1;
+    let finale = '';
+    rec.onresult = e => { let t=''; for (const r of e.results){ t += r[0].transcript; if (r.isFinal) finale = t; } stato('listening', '“' + t + '”'); };
+    rec.onerror = () => {}; rec.onend = () => res(finale.trim() || null);
+    stato('listening', 'Ti ascolto…'); rec.start();
+  });
+}
+
+async function conversazione(){
+  await parla(SALUTO);
+  while (attivo){
+    const q = await ascolta();
+    if (!attivo) break;
+    if (!q){ if (!SR){ stato('', 'Il riconoscimento vocale non è disponibile su questo browser. Usa Chrome o Safari.'); attivo = false; break; } continue; }
+    stato('thinking', 'Erica ci pensa…');
+    await parla(rispondi(q));
+  }
+  stato('', 'Tocca il microfono e parla con Erica');
+}
+
+mic.addEventListener('click', async () => {
+  contesto();
+  if (attivo){ attivo = false; try{ rec && rec.abort(); }catch(e){} try{ speechSynthesis.cancel(); }catch(e){} stato('', 'Conversazione in pausa. Tocca per riprendere.'); return; }
+  attivo = true;
+  if (!ttsPronto) { stato('thinking', 'Preparo la voce di Erica…'); await caricaVoce(); }
+  conversazione();
+});
+
+// Precarica la voce in sottofondo
+caricaVoce().then(() => stato('', 'Tocca il microfono e parla con Erica'));
+</script>
+</body>
+</html>
